@@ -4,7 +4,30 @@
 \usepackage{longtable}
 \usepackage{multicol}
 \usepackage{booktabs} % http://ctan.org/pkg/booktabs
-\usepackage[numbib]{tocbibind} % http://www.ctan.org/pkg/tocbibind
+\usepackage[numbib,notlof,notlot,nottoc]{tocbibind} % % http://www.ctan.org/pkg/tocbibind
+
+\makeatletter
+\renewenvironment{thebibliography}[1]
+     {\section{\bibname}% <-- this line was changed from \chapter* to \section
+      \@mkboth{\MakeUppercase\bibname}{\MakeUppercase\bibname}%
+      \list{\@biblabel{\@arabic\c@enumiv}}%
+           {\settowidth\labelwidth{\@biblabel{#1}}%
+            \leftmargin\labelwidth
+            \advance\leftmargin\labelsep
+            \@openbib@code
+            \usecounter{enumiv}%
+            \let\p@enumiv\@empty
+            \renewcommand\theenumiv{\@arabic\c@enumiv}}%
+      \sloppy
+      \clubpenalty4000
+      \@clubpenalty \clubpenalty
+      \widowpenalty4000%
+      \sfcode`\.\@m}
+     {\def\@noitemerr
+       {\@latex@warning{Empty `thebibliography' environment}}%
+      \endlist}
+\makeatother
+
 
 \newcommand{\tabitem}{~~\llap{\textbullet}~~}
 \newcommand*{\SignAndDate}[1]{%
@@ -44,6 +67,16 @@ Pull requests between development branches and the master branch were used to al
 
 \chapter{Original Client Requirements Document}
 
+\section{Project Demographics}
+
+\renewcommand{\arraystretch}{1.2}
+\noindent\begin{tabular}{p{3cm}p{8cm}}
+Project Name:   & \begin{tabular}[t]{l}CASTAR: Clang AST Analysis \& Repair\end{tabular}\\
+Team Name:      & \begin{tabular}[t]{l}Team \#45 - Lúdramán Industries\end{tabular}\\
+Team Members:   & \begin{tabular}[t]{l}Nicholas Nelson\\ Mark Mills\\ Charles Santos\end{tabular}\\
+Client/Sponsor: & \begin{tabular}[t]{l}Andrew Stucky, Garmin AT\\\textit{andrew.stucky@garmin.com}\end{tabular}
+\end{tabular}
+
 \section{Introduction}
 Garmin AT develops navigational components for a variety of aircraft. These components provide a high degree of situational awareness to pilots by integrating data from a variety of sources including GPS, weather, and traffic information from the Automatic Dependent Surveillance-Broadcast (ADS-B) data link network. Avionics displays similar to the products Garmin produces were crucial to the Capstone Program in Alaska which reduced accidents state wide by 40\% from 1999 to 2009 according to a report published by the Federal Aviation Administration.
 
@@ -59,7 +92,7 @@ Our scripts will be examining abstract syntax trees to determine if the source c
 The client has provided us with the list of rules/issues that need to be implemented in python in rule specific scripts. There may be a number of issues that are more appropriate as regular expressions and that will have to be determined as we progress and consult with the client. Some of these python scripts may group together multiple issues that are related. Users will specify C source/header files that need to be checked, our main script will use Clang to parse the abstract syntax trees from these files. The main script will then call scripts for each of the rule specific scripts which will examine the ASTs for compliance with the issues the client has identified. When there is a violation there will either be a change to the source or a flag will be logged to alert the user. The scripts which are allowed to change source code will be run first followed by scripts that can only alert the user since it is possible that some changes may mitigate these warnings. We will also need to determine an order of operations for any scripts that change source code since they may interact with one another in ways that may either create new issues or resolve errors before they are handled by later scripts. If the source code is changed Clang will be called again and the altered AST will be loaded.
 
 \section{Requirements}
-The following list constitutes the baseline of requirements that will completed during this project. We will switch issues from this list and the Issues list (Section Reference) as needed based upon the priorities of the client/mentor, and the applicability of an issue to being resolved using the Clang AST library. Issues not on the Requirements list will still be attempted and hopefully completed during this project.
+The following list constitutes the baseline of requirements that will completed during this project. We will switch issues from this list and the Issues list (Section~\ref{issues}) as needed based upon the priorities of the client/mentor, and the applicability of an issue to being resolved using the Clang AST library. Issues not on the Requirements list will still be attempted and hopefully completed during this project.
 
 \begin{longtable}{| p{.30\textwidth} | p{.65\textwidth} |} 
 \hline
@@ -118,7 +151,7 @@ Minor version releases will occur based upon the completion of development, test
 \end{figure}
 
 \section{Design}
-Fundamentally, our project and the design to complete it relies upon Abstract Syntax Tree (AST) representations of C source code and the methods in which the Clang AST parser library represents those AST trees. Therefore we have relied heavily upon documentation and research into the use of ASTs for source code evaluation and how Clang AST accomodates such use cases.
+Fundamentally, our project and the design to complete it relies upon Abstract Syntax Tree (AST) representations of C source code and the methods in which the Clang AST parser library represents those AST trees. Therefore we have relied heavily upon documentation and research into the use of ASTs for source code evaluation \cite{neamtiu2005understanding}\cite{pfenning1988higher} and how Clang AST accomodates such use cases \cite{lattner2008llvm}\cite{duffyexploiting}\cite{schaub2014comprehensive}.
 
 Garmin AT has previously developed infrastructure code, including a few example solutions to issues, based upon regular expression-based analysis techniques. In the process of developing additional solutions to issues, they realized that some issues cannot be accomplished through the use of regular expressions. They chose AST analysis as the more desired solution, and have since sought to use our project to both refactor current issues that could benefit from AST analysis and complete unfinished issues with either AST analysis or regular expressions (based upon the best solution possible).
 
@@ -240,6 +273,101 @@ See Figure~\ref{fig:dataflow} for the dataflow sequence diagram representing our
 \section{User Interface Requirements}
 
 For this product, the user interface will work entirely through the command line, as this is a tool which will be integrated into the compilation and code check-in processes. The tool will take source and configuration files as input and output to either another file or the standard output. Text output should be formatted in a way that is human-readable and relatively easy to parse.
+
+\section{Issues} \label{issues}
+
+Well Defined Issues:
+\begin{enumerate}
+	\setcounter{enumi}{100}
+	\item Inline Comments
+	\item In-function Comments
+	\item Title Header Comments
+	\item Public / Private Trimming
+	\item Hard Tabs
+	\item Function Headers
+	\item File Header Comment Block Indentation
+	\item Slash Slash Comments
+	\item File Header Comment Block Description Trim
+	\item \texttt{NoKeywords} in the File Header Comment Block
+	\item File Header Comment Block Copyright Year
+	\item Stack Function Arguments in each Parameter List
+	\item Brace Alignment
+	\item Fix the Casing on
+	\item Place Whitespace Around all Parenthesis
+	\item Add a Local Variables Section into each Function
+	\item \texttt{\#include} Casing, Spacing, Sorting and Ordering
+	\item Prototype the Static Functions at the Top
+	\item Fix the File Assertion
+	\item Precede Newlines with Carriage Returns
+	\item Inline Comment Upgrade
+	\item Function Order
+\end{enumerate}
+Other Issues:
+\begin{longtable}{p{.50\textwidth} p{.50\textwidth}}
+\tabitem Module name not in module header comment & \tabitem Module name in module header comment doesn\'t match\\
+\tabitem No description in Module header comment & \tabitem Section is missing, i.e. General Includes, Types\\
+\tabitem Section is out of order & \tabitem Section is not centered\\
+\tabitem Section comment block not right length & \tabitem Missing design assurance level\\
+\tabitem Empty comment block & \tabitem Comment block that extends to 92, these are considered module section comments\\
+\tabitem Comment block extends past column 80 & \tabitem Comment blocks top line doesn't match the bottom line\\
+\tabitem Local function prototype without the static qualifier & \tabitem Function prototypes out of alphabetical order\\
+\tabitem Parameters are not formatted correctly in function prototype & \tabitem Not using void in functions prototypes with no arguments\\
+\tabitem Parameter without comment in function prototype & \tabitem Unnecessary comment for function prototype\\
+\tabitem Missing function comment header & \tabitem Missing function name in function comment header\\
+\tabitem Missing description in function comment header & \tabitem Function comment header extends past column 92\\
+\tabitem Missing end of function comment & \tabitem Function name, comment name, and end of comment not all the same\\
+\tabitem Unnecessary comment for function itself, the inline one after "void foo(" & \tabitem Parameters not written correctly in function\\
+\tabitem No void parameter in empty function & \tabitem Missing comment on function parameter\\
+\tabitem Public function out of alphabetical order in module header & \tabitem Non public function in public function section\\
+\tabitem Privileged procedures out of alphabetical order in module header & \tabitem Non privileged procedure in privileged section\\
+\tabitem Private function out of alphabetical order in module header & \tabitem Non private function in private function section\\
+\tabitem Local function in module header out of alphabetical order & \tabitem Non local function in local function section.\\
+\tabitem Public function in header that's not in the file. & \tabitem Privileged function in header that's not in the file\\
+\tabitem Private function in header that's not in the file & \tabitem Local function in header that's not in the file.\\
+\tabitem Public functions not in alphabetical order & \tabitem Function in file that's not in the header.\\
+\tabitem Public function not in the public function section of file & \tabitem Privileged function out of alphabetical order\\
+\tabitem Privileged function not in the privileged function section & \tabitem Private function out of alphabetical order in file\\
+\tabitem Private function not in the private section of the file & \tabitem Local function out of alphabetical order.\\
+\tabitem Local variables out of alphabetical order & \tabitem Local variable has no comment\\
+\tabitem Standard library includes out of alphabetical order & \tabitem Standard library includes not prior to public private Garmin includes\\
+\tabitem Public includes out of alphabetical order & \tabitem Public include not prior to private includes\\
+\tabitem Private includes out of alphabetical order & \tabitem Private include not after public includes\\
+\tabitem Invalid private includes for component & \tabitem Deprecated "grm\_pub.h" or "grm\_pub\_lib.h"\\
+\tabitem Header file not defining multiple include protection & \tabitem Header not looking for multiple include protection\\
+\tabitem Headers multiple include protection doesn't match the file name & \tabitem Header missing comment for end of multiple include protection\\
+\tabitem Comment at end of file for multiple include doesn't match the defin. & \tabitem Enum has no comment\\
+\tabitem Typedef has no comment & \tabitem Typedef members written incorrectly\\
+\tabitem Typdef member has no comment & \tabitem compiler\_assert() doesn't match the header file it's used in.\\
+\tabitem Function not associated with a c file & \tabitem Function not actually defined in the specified c file\\
+\end{longtable}
+
+\bibliography{references.bib}{}
+\bibliographystyle{plain}
+
+\section{Glossary}
+The following terms are defined in order to provide clarity to the rest of this document:\\
+
+\noindent\begin{tabular}{l p{8cm}}
+AST & See \textit{Abstract Syntax Tree}\\
+\hline
+Abstract Syntax Tree & A tree representation of the abstract syntactic structure of source code in a programming language.\\
+\hline
+Issue & The problem statement for a syntactic requirement on the C source code structure.\\
+\hline
+Rule & The code that analyzes, flags, and potentially fixes a specific issue (or a set of related issues).\\
+\end{tabular}
+
+\pagebreak
+\section{Signatures}
+The undersigned parties hereto mutually agree to the validity of statements made within this document. Any modifications to statements within this document must be agreed upon in writing by all signatories and with the consent of the current Senior Software Engineering Project course instructor.
+\vspace{.2in}
+\SignAndDate{Andrew Stucky (Mentor)}
+\vspace{.2in}
+\SignAndDate{Nicholas Nelson}
+\vspace{.2in}
+\SignAndDate{Mark Mills}
+\vspace{.2in}
+\SignAndDate{Charles Santos}
 
 
 \end{document}
