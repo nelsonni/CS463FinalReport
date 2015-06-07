@@ -189,7 +189,7 @@ In addition to individual issue tests, integration and system tests will be impl
 We will rely heavily upon unit tests for validation of each methods functionality and compatability within the greater codebase. The overarching integration tests will be used to validate that the entire system completes without errors across the lifespan of an execution.
 
 \section{Preliminary Timetable}
-\noindent\begin{longtable}{| p{.20\textwidth} | p{.70\textwidth} |}
+\begin{longtable}{| p{.20\textwidth} | p{.70\textwidth} |}
 \hline
 \textbf{October} & Inital meeting with client, introduction to project, development of problem statement and technology review\\
 \hline
@@ -371,54 +371,87 @@ The undersigned parties hereto mutually agree to the validity of statements made
 
 \chapter{Project Evolution}
 
-Throughout this project, requirements have been revisited and revised as necessary to meet the overarching objectives. The following additions, modifications, and removals of requirements were necessary to successfully complete the project:
+Throughout this project, requirements have been revisited and revised as necessary to meet the overarching objectives. The following additions, modifications, and removal of requirements were necessary to successfully complete the project:
 
-\noindent\begin{longtable}{| p{.04\textwidth} | p{.30\textwidth} | p{.15\textwidth} | p{.45\textwidth} |}
+\begin{longtable}{| p{.03\textwidth} | p{.32\textwidth} | p{.10\textwidth} | p{.43\textwidth} |}
 \hline
-101 & Inline Comments & Completed & Merged into \textit{master} branch on Jan 23\\
+1 & cfixer.py unable to run on POSIX-compliant systems (Linux, BSD, OSX, etc.) & Added & Fix merged into \textit{master} branch on Jan 20.\\
 \hline
-102 & In-Function Comments & Completed & Merged into \textit{master} branch on May 5\\
+2 & Issue \#110: \texttt{NoKeywords} in the File Header Comment Block & Modified & Client added requirements to remove \$NoKeywords\$, \$Log.\$, \$Id.\$ patterns.\\
 \hline
-103 & Title Header Comments & Completed & Merged into \textit{master} branch on May 5\\
+3 & Compatability issue on Cygwin environment & Added & Fix merged into \textit{master} branch on Jan 28.\\
 \hline
-104 & Public/Private Trimming & Completed & Merged into \textit{master} branch on Feb 11\\
+4 & Issue \#103: Title Header Comments & Modified & Client added requirements to remove deprecated section headers, rename "FILE DO-178B LEVEL" to "DESIGN ASSURANCE LEVEL", added sections headers if they do not exist, and order current and newly inserted section headers in order.\\
 \hline
-105 & Hard Tabs & x & x\\
+5 & Issue \#108: Slash Slash Comments & Modified & Client removed requirement that slash slash comments be removed when a removal flag is enabled; removal flag option is also removed.\\
 \hline
-106 & Function Headers & x & x\\
+6 & Issue \#116: Local Variables Section & Modified & Client added requirements this solution also handle \texttt{typedefs}, \texttt{const}, and macros.\\
 \hline
-107 & File Header Comment Block Indentation & x & x\\
+7 & Issue \#117: \texttt{\#include} Casing, Spacing, Sorting and Ordering & Modified & Client added ANSI standards requirements and dropped Garmin specific standards that contradicted the ANSI standards.\\
 \hline
-108 & Slash Slash Comments & x & x\\
+8 & Add issue ordering support & Added & Client added requirement that the production engine allow custom ordering of issue execution.\\
 \hline
-109 & File Header Comment Block Description Trim & x & x\\
+9 & Updated command-line options & Added & Client added requirement that command-line options support \texttt{+/-c} instead of \texttt{+/-e}.\\
 \hline
-110 & \texttt{NoKeywords} in the File Header Comment Block & x & x\\
+10 & Remove absolute path dependencies from issue scripts & Added & Client added this requirement to all issues.\\
 \hline
-111 & File Header Comment Block Copyright Year & x & x\\
+11 & Issue \#113: Brace Alignment & Modified & Client added requirement that this issue also handle split statement alignment.\\
 \hline
-112 & \texttt{Stack} Function Arguments in each Parameter List & x & x\\
+12 & Issue \#123: Empty Comment Block & Added & Client added new issue for removing empty comment blocks, in-line comments, and slash-slash comments.\\
 \hline
-113 & Brace Alignment & x & x\\
+13 & Issue \#124: Check/Fix Function Footer In-line Comments & Added & Client added new issue for fixing format of in-line comments.\\
 \hline
-114 & Fix Casing on Block Header Comment Sections & Removed & Client removed this requirement on Nov 11, since other requirements cover this same functionality.\\
+14 & Issue \#125: Check/Fix Header Guard on Header Files & Added & Client added new issue for header guards to conform to \texttt{\_<all caps filename>\_H} format.\\
 \hline
-115 & Whitespace Surrounding All Parentheses & x & x\\
-\hline
-116 & Add a Local Variables Section into each Function & x & x\\
-\hline
-117 & \texttt{\#include} Casing, Spacing, Sorting and Ordering & x & x\\
-\hline
-118 & Prototype the Static Functions at the Top & x & x\\
-\hline
-119 & Fix the File Assertion & x & x\\
-\hline
-120 & Precede Newlines with Carriage Returns & x & x\\
-\hline
-121 & Inline Comment Upgrade & x & x\\
-\hline
-122 & Function Order & x & x\\
+15 & Issue \#126: Privileged Function Validation & Added & Client added new issue for detecting public functions and privileged functions existing in the same file; flagging if this is violated.\\
 \hline
 \end{longtable}
+
+\section{Gantt Chart Updates}
+
+The additions, modifications, and removals to our overall requirements did not force alterations to our Gantt Chart, but the reduction of our team size from 3 to 2 students prior to the midterm evaluation in Winter 2015 forced an update to the release schedule and timeline.
+
+See Figure~\ref{fig:versioning} for the illustration of our release model.
+See Table~\ref{original_release_schedule} and Table~\ref{updated_release_schedule} for the updates to our release schedule, and Figure~\ref{fig:timeline} for the timeline from \textit{Microsoft 365} site used to manage the project.
+The Gantt Chart for the project is included in Figure~\ref{fig:gantt}.
+
+\begin{longtable}{| p{.20\textwidth} | p{.45\textwidth} |}
+\caption[Original Release Schedule]{Original Release Schedule} \label{original_release_schedule} \\
+\hline
+December 8 & Version 1.0 released\\
+\hline
+March 13 & Version 2.0 released\\
+\hline
+May 8 & Version 3.0 released\\
+\hline
+May 15 & EXPO Event\\
+\hline
+\end{longtable}
+
+\begin{longtable}{| p{.20\textwidth} | p{.45\textwidth} |}
+\caption[Updated Release Schedule]{Updated Release Schedule} \label{updated_release_schedule} \\
+\hline
+December 19 & Version 1.0 released\\
+\hline
+March 24 & Version 2.0 released\\
+\hline
+May 12 & Version 3.0 released\\
+\hline
+May 15 & EXPO Event\\
+\hline
+\end{longtable}
+
+\begin{figure}[ht]
+  \caption{Project Timeline}
+  \makebox[\textwidth][c]{\includegraphics[width=1.1\textwidth]{timeline}}%
+  \label{fig:timeline}
+\end{figure}
+
+\begin{figure}[ht]
+  \caption{Gantt Chart}
+  \makebox[\textwidth][c]{\includegraphics[width=1.1\textwidth]{gantt}}%
+  \label{fig:gantt}
+\end{figure}
+
 
 \end{document}
