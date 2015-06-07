@@ -371,6 +371,8 @@ The undersigned parties hereto mutually agree to the validity of statements made
 
 \chapter{Project Evolution}
 
+\section{Requirements Updates}
+
 Throughout this project, requirements have been revisited and revised as necessary to meet the overarching objectives. The following additions, modifications, and removal of requirements were necessary to successfully complete the project:
 
 \begin{longtable}{| p{.03\textwidth} | p{.32\textwidth} | p{.10\textwidth} | p{.43\textwidth} |}
@@ -407,9 +409,9 @@ Throughout this project, requirements have been revisited and revised as necessa
 \hline
 \end{longtable}
 
-\section{Gantt Chart Updates}
+\section{Gantt Chart \& Timeline Updates}
 
-The additions, modifications, and removals to our overall requirements did not force alterations to our Gantt Chart, but the reduction of our team size from 3 to 2 students prior to the midterm evaluation in Winter 2015 forced an update to the release schedule and timeline.
+The additions, modifications, and removals to our overall requirements did not force major alterations to our Gantt Chart, but the reduction of our team size from 3 to 2 students prior to the midterm evaluation in Winter 2015 required modifying the timeline for our releases in order to accomodate completing the same requirements with a reduced workforce.
 
 See Figure~\ref{fig:versioning} for the illustration of our release model.
 See Table~\ref{original_release_schedule} and Table~\ref{updated_release_schedule} for the updates to our release schedule, and Figure~\ref{fig:timeline} for the timeline from \textit{Microsoft 365} site used to manage the project.
@@ -453,5 +455,151 @@ May 15 & EXPO Event\\
   \label{fig:gantt}
 \end{figure}
 
+\chapter{Weekly Blog Posts}
+
+\section{Analyzing the Problem}
+\textit{Friday, November 7, 2014 by Nicholas Nelson}
+\newline
+
+All other classwork aside, we have begun to get into the specifics of our project and where appropriate goals and boundaries should be set. I have previous experience using Abstract Syntax Trees (AST) in Java during a summer research assistantship with a team of graduate student researchers at OSU. Capitalizing on that experience, we have begun to explore the capabilities and limitations of AST constructs in the C language. As a team, we have agreed to watch the 45 minute video that introduces the LLVM project's Clang infrastructre, including the Clang AST parser, on their website: \textit{http://clang.llvm.org/docs/IntroductionToTheClangAST.html}.
+
+\section{Requirements Pinned Down}
+\textit{Friday, November 21, 2014 by Charles Santos}
+\newline
+
+This week, we finalized our requirements document. It is likely the largest assignment and compilation of information about our project so far (and probably going forward for a while) because it describes absolutely everything about the project.
+The detail is necessary because, firstly, this is the explicit definition of what our customer will be receiving and, secondly, it defines what we will be delivering at each release.
+If nothing else, I think that getting all of this information together, while involved and a bit tiring, is very exciting because it is the first glimpse at what our finish product will look like.
+
+\section{Holiday}
+\textit{Friday, November 28, 2014 by Charles Santos}
+\newline
+
+With Thanksgiving this week, all we had to do was get the requirements document absolutely finished, signed, and handed in. In the end, it was a respectable stack of paper and, I think, turned out well.
+I don't konw about the other members of the group, but my family was very interested in my capstone project and while it will be a lot of work, I am glad that I can be involved in such a large and \"real-worldly\" project.
+
+\section{Winter Term has begun!}
+\textit{Saturday, January 10, 2015 by Nicholas Nelson}
+\newline
+
+As a team, we attempted to mix code development with our holiday break in order to get a jump on our upcoming milestones. We had only mild success with that though. Mainly due to travels and other time commitments. We did get started on two issues from the list of coding standards issues that were identified in our Requirements Document.
+
+We had our biweekly teleconference meeting with Andrew and determined that completely 6-8 issues this week was not feasible or likely, so we pushed version 1.0 back to Friday, January 23 release date. We should have a code freeze on Wednesday, January 21 in order to allow time for Andrew to conduct a code review.
+
+\section{Week 2 of Winter Term}
+\textit{Thursday, January 15, 2015 by Nicholas Nelson}
+\newline
+
+After getting settled into classes, we have begun to outline which issues we will be focusing on throughout the rest of the term. We have mainly focused on the top 20-30 issues identified in our list that was provided by our sponsor, since those have a higher priority.
+
+\section{Week 3 and Release 1.0}
+\textit{Friday, January 23, 2015 by Nicholas Nelson}
+\newline
+
+We had originally planned to release 1.0 on Friday, but since only 2 issues have been implemented and reviewed we decided to postpone version 1.0 until an additional 4-6 issues can be checked into github. Andrew indicated that we need to begin developing implementation code at a faster pace in order to meet our intended requirements.
+
+\section{Week 4}
+\textit{Wednesday, January 28, 2015 by Nicholas Nelson}
+\newline
+
+This week has mostly been comprised of iterative development cycles on 4-5 issues that we have been working on individually. We have had to clarify some of the scope of individual issue requirements, and fix bugs in the testing framework in order to proceed.
+
+\section{Week 5}
+\textit{Sunday, February 8, 2015 by Nicholas Nelson}
+\newline
+
+Further development work has seen 4 out of 5 in-progress issues fully completed and merged into the master branch of the git repository. With the completion of the remaining open issue, we should have enough for releasing Version 1.0.
+
+Some of the stumbling blocks have been specific details of the requirements of specific issues. For example, an issue that originally required locating all instances of a keyword within the input C file and either removing or adding it to the appropriate location within the file. After further discussion, the requirements were changed to only require locating and removing the keywords. Additional development time was spent developing a dynamic adding function that was not required in the end.
+
+\section{Week 6 and Version 1.0}
+\textit{Wednesday, February 11, 2015 by Nicholas Nelson}
+\newline
+
+Resolving the final outstanding issue has allowed us to provide the customer with a complete set of issue solutions for validation and integration into the master branch. Andrew (our customer) merged and released Version 1.0 on Wednesday, February 11, 2015.
+
+We are now beginning work on solutions to 8-10 issues for inclusion in Version 2.0. Further discussion and development will occur during our biweekly teleconference meeting with Andrew on Friday.
+
+\section{Week 7}
+\textit{Wednesday, February 19, 2015 by Nicholas Nelson}
+\newline
+
+Only 3 issues have been resolved to the point of submitting pull requests for Andrew to review and merge. Upon examining the issues we currently have assigned to version 2.0, it is clear to us that these issues will require more extensive development in order to meet the requirements. Several issues require heavy use of the full API for Clang AST or in-depth Python and regular expression evaluations in order to locate affected areas in the target files and test files.
+
+In some issues we have hit a snag based on the capabilities of our current APIs and libraries, and we are having to develop shared code for determining things like function signatures, types of comment blocks, sections within comment blocks (which Clang AST considers to be a singular \textit{comment block} node), etc.
+
+\section{Week 8}
+\textit{Wednesday, February 25, 2015 by Nicholas Nelson}
+\newline
+
+Several complex code blocks for issues that are outstanding for version 2.0 have seen major progress this week. We spent our biweekly phone meeting with Andrew discussing details to some of these issues and clarifying the expected results that Garmin expects from each. There was only 1 pull request for a finalized issue this week, but that was not indicative of the progress that was made. Now that midterms are over we can hopefully get the rest of version 2.0 up and running.
+
+\section{Week 9}
+\textit{Friday, March 6, 2015 by Nicholas Nelson}
+\newline
+
+Because coursework for our other classes has been demanding in light of the upcoming end to the term, our development pace has slowed a bit. We had 2 pull requests, but one was immediately rejected because it breaks on Andrew's test runs. We are also working on the status report for the Winter 2015 term in order to have it ready for final evaluation.
+
+Some re-engineering in order to maintain cross-platform support was required and held up further work on the issue solutions until Andrew Stucky and Nick Santana could weigh in and provide the necessary file inclusions. They were very quick with the updates, but it did hold up some development.
+
+\section{Finals Week}
+\textit{Monday, March 16, 2015 by Nicholas Nelson}
+\newline
+
+Unfortunately we did not have a chance to meet and discuss any of our current work on version 2.0 issues during Week 10. With the demands of all of our other classes, we have slipped on our schedule and asked Andrew for permission to update the version 2.0 release date to Friday, March 20, 2015. We are hoping to finish the rest of the 6 open issues between now and then so that we can proceed with version 3.0 issues.
+
+\section{Spring Break \& Spring 2015 Term}
+\textit{Wednesday, March 25, 2015 by Nicholas Nelson}
+\newline
+
+Charles was able to complete all of his version 2.0 issues prior to our previously set March 20 release date. But I unfortunately got bogged down with issue 112 and after 60+ hours of development time it was decided to shift this issue to version 3.0 and move onto the other two outstanding issues (102 and 103). We also agreed to move forward with version 2.0 being released on Tuesday, March 24, 2015.
+
+Both Charles and I used our Spring Break vacations to work on this project when we could, but travel and vacations meant that we were only able to work in stop and start sessions. We had 7 pull requests within the last 2 weeks, so we are continuing to move forward.
+
+\section{Week 1}
+\textit{Sunday, April 5, 2015 by Nicholas Nelson}
+\newline
+
+After reviewing our version 2.0 release and the open issues that have not yet been resolved, we determined that some additional issues could be added to fix some of the infrastructure issues that have cropped up; specifically around locating comment blocks and replacing text when located using regular expressions. With new classes starting we have only had 1 pull request submitted so far.
+
+\section{Week 2 \& 3}
+\textit{Tuesday, April 14, 2015 by Nicholas Nelson}
+\newline
+
+With the midterm evaluations coming up soon, we have spent this week developing code for our individual issues that will be used for the requirements evaluations. We did not submit any pull requests, but lots of code commits can be found in our \textit{git} repositories.
+
+\section{Week 4}
+\textit{Friday, April 24, 2015 by Nicholas Nelson}
+\newline
+
+Several graduation oriented events have occurred in the last week or two, and this has taken some of our attention away from the project. We regrouped for a brief team meeting after our check-in with Nels Oscar (TA), and were able to make sure that we are prepared for releasing version 3.0 in two weeks. We still have 10 issues that need to be finished prior to that release.
+
+\section{Week 5 \& Midterm Requirements Evaluation}
+\textit{Tuesday, April 28, 2015 by Nicholas Nelson}
+\newline
+
+Charles was able to have Nels evaluate his completed requirements for the midterm point of the Spring 2015 term, but I have had to postpone my evaluation until Friday because of issue 112. This issue continues to become more complicated and troublesome, but I believe a complete refactoring over the weekend means that I will be able to finish it soon.
+
+We submitted 4 pull requests either over the weekend or yesterday, so we are still making progress.
+
+\section{Week 6}
+\textit{Thursday, May 7, 2015 by Nicholas Nelson}
+\newline
+
+Some midterms in other classes were cause for development to be slow this week. We only did 2 pull requests, but now that issue 112 is done I am able to move forward with my remaining issues. Version 3.0 might have to be pushed back since we still have 4 issues outstanding and we were suppose to have the release tomorrow. We will be discussing this issue with Andrew during our biweekly conference call tomorrow. Obviously it can't be pushed back too far since EXPO is next Friday.
+
+\section{EXPO!!!}
+\textit{Thursday, May 14, 2015 by Nicholas Nelson}
+\newline
+
+Our poster is printed and ready, all issues for version 3.0 have been pulled into the \texttt{master} branch, and we have dress shirts and ties on standby. Our booth is located on the 4th floor near the stairwell on the eastern end of Kelley Engineering Center. Tomorrow is the College of Engineering EXPO!
+
+\section{Project Conclusion}
+\textit{Friday, June 5, 2015 by Nicholas Nelson}
+\newline
+
+We had a successful presentation at EXPO, but did not receive much traffic due to our location. We met with Nels Oscar for the last time a few weeks ago and according to him we have met all expectations and requirements other than the final report and video presentation. We also had a brief meeting with Andrew Stucky, our mentor/sponsor from Garmin AT, during the EXPO and he expressed that we had done a good job and that the final product was beginning to be adopted by several development teams within Garmin. The response from those teams has been positive.
+
+We would like to thank Andrew for his support and time on this project, Nick Santana for his technical expertise, Nels Oscar for his assistance and timely input, and Kevin McGrath for leading a productive and encouraging senior software engineering course.
 
 \end{document}
