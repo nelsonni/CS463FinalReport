@@ -774,8 +774,950 @@ They may appear to be focused on the project, but other forces outside of my con
 
 I would insist to the client that building a shared infrastructure of functions and code that can be reused by every member of the team is a highly desirable trait within a modular project such as this one. Other than that, I would generally stick to the same game plan.
 
-\chapter{Appendixes}
+\chapter{Appendices}
 
 \section{Essential Code}
+
+\subsection{cfixer.py}
+\lstset{language=Python,breaklines=true}
+\begin{lstlisting}[frame=single,basicstyle=\small]
+#!/usr/bin/env python
+#-*- encoding: utf-8 -*-
+""
+:mod:`cfixer` --- Autofixer for code files
+===========================================
+Auto-fixes conventional errors within the file this file is called upon.
+There are options to check or fix all errors and formatting.
+""
+
+import sys
+import string
+import os
+import pprint
+import argparse
+import logging
+import copy
+from pprint import pprint
+from sys import platform as _platform
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+
+#--------------------------------------------
+#Owing to the fact that this isn't a package, this
+#block makes it possible for us to relatively import
+#other units of code.
+if __name__ == "__main__" or __package__ is None:
+    mod_name = os.path.basename(current_dir)
+    sys.path.insert(1, parent_dir)
+    mod = __import__(mod_name)
+    sys.modules[mod_name] = mod
+    __package__ = mod_name
+#---------------------------------------------
+#Must be below the above section of code.
+import walker
+from .clang import cindex
+from .clang.cindex import Config
+from .clang.cindex import Index
+from .clang.rewriter import Config as rewriter_config
+from .clang import rewriter
+from .issue_checkers import *
+from .reporters import *
+from cfixer_base import *
+from cfixer_util import *
+
+ISSUE_CLASS_PREFIX = "Issue"
+REPORTER_MODULE_SUFFIX = "_reporter"
+ISSUE_MODULE_PREFIX = __package__ + ".issue_checkers.issue"
+REPORTER_MODULE_PREFIX = __package__ + ".reporters."
+
+class CommentArgParser(argparse.ArgumentParser):
+    ""
+    Basic argparser in addition to giving the ability to skip over comments with
+    a custom denotation in the config file/arg list.
+    ""
+    def __init__(self, *args, **kwargs):
+        super(CommentArgParser, self).__init__(*args, **kwargs)
+
+    def convert_arg_line_to_args(self, line):
+        for arg in line.split():
+            if not arg.strip():
+                continue
+            if arg[0] == "#":
+                break
+            yield arg
+
+
+class IssueAction(argparse.Action):
+    ""
+    This handles processing of the issue flags as provided by the argparser.
+    This will verify the arguments passed with the issue type flag, and if successful will
+    append the issue checker/fixer to the list.
+    In order to extend the list this needs to do a deep copy of the list and then add the
+    new item to the deep copy, and finally set the stored list to the new copy.
+    This assumes the default is set to [], probably need to make a copy of argparse.py
+    _ensure_value()
+    ""
+    def __call__(self, parser, namespace, values, option_string=None):
+        if option_string.startswith("+f"):
+            fix_item = True
+        elif option_string.startswith("+c"):
+            fix_item = False
+        #---------------------------------------------
+        #This block adds functionality for subtracting out fixers/checkers from
+        #the command line.
+        elif option_string.startswith("-f") or option_string.startswith("-c"):
+            all = string.maketrans('', '')
+            nodigs = all.translate(all, string.digits)
+            cline_issue_str = option_string
+            cline_issue_str = cline_issue_str.translate(all, nodigs)
+            for each_instantiated_issue in getattr(namespace, self.dest):
+                class_type = type(each_instantiated_issue).__name__
+                ref_prefix = str(class_type).translate(all, nodigs)
+                if ref_prefix == cline_issue_str:
+                    getattr(namespace, self.dest).pop(getattr(namespace, self.dest).index(each_instantiated_issue))
+            return
+        #---------------------------------------------
+
+        #Parse the reporting arg from the command line, instantiate it, and prepare
+        #to pass it into the newly instantiated issue object.
+        reporter_label = getattr(namespace, "reporter") + REPORTER_MODULE_SUFFIX
+        reporter_class = getattr(sys.modules[REPORTER_MODULE_PREFIX + reporter_label], reporter_label) #Issue is in second argument
+        reporter_instance = reporter_class()
+
+        #Instantiates the issue object with prepared arguments.
+        issue_num = option_string[2:]
+        issue_cls = getattr(sys.modules[ISSUE_MODULE_PREFIX + issue_num], ISSUE_CLASS_PREFIX + issue_num)
+        new_issue = issue_cls(fix_item, issue_num, values, getattr(namespace, "source_file"), reporter_instance)
+
+        issues = copy.copy(getattr(namespace, self.dest))
+        issues.append(new_issue)
+        setattr(namespace, self.dest, issues)
+
+class ChunkMaster(object):
+    ""
+    Dedicated to chunking the file into usable sections with the use
+    of the libclang API.
+    ""
+    def __init__(self, file_name, file_folder_root, clang_options=None):
+        args = None
+        args = get_sub_directories(get_file_root_dir(os.path.abspath(os.path.dirname(file_name))))
+        args.append("-I" + os.path.dirname(os.path.abspath(__file__)) + "/clang/include")
+        # dynamic library linking on POSIX-compliant systems (Linux, BSD, OSX) require .so linker files, whereas
+        # Windows systems utilize .dll linker files
+        clang_lib = None
+
+        if _platform == "win32" or _platform == "cygwin":
+            clang_lib = os.path.dirname(os.path.abspath(__file__)) + "/clang/libclang.dll"
+        else:
+            clang_lib = os.path.dirname(os.path.abspath(__file__)) + "/clang/libclang.so"
+        cindex.Config.set_library_file(clang_lib)
+        rewriter.Config.set_library_file(clang_lib)
+        opts = cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD | cindex.TranslationUnit.PARSE_PRECOMPILED_PREAMBLE
+
+        # handle both relative and absolute paths
+        abs_file_name_path = ''
+        if os.path.isabs(file_name):
+            abs_file_name_path = file_name
+        else:
+            abs_file_name_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/' + file_name
+
+        with open(abs_file_name_path, "rb") as source:
+            source_file = source.read()
+        # FIXME: Not sure why clang seems to be holding onto the file on some PCs. So read
+        # the file into memory and pass it to clang that way.
+        self._tu = cindex.TranslationUnit.from_source(file_name, args, [(file_name, source_file)], opts)
+#        cr = self._tu.codeComplete(file_name, 9, 1, include_brief_comments=True)
+        self._cursor = self._tu.cursor
+        self._file_name = file_name
+        self._rewriter = rewriter.Rewriter.from_tu(self._tu)
+
+        # HACK, use this to print out the clang errors
+        for diag in self._tu.diagnostics:
+            print diag
+
+    def __node_in_main_src_file(self, node):
+        ""
+
+        :param node: The node to check for being in a source file.
+
+        :type node: An AST node or even a token, it just needs to have a SourceLocation at its location property.
+
+        This function returns True if the node is one in the main source file.
+        ""
+        try:
+            return node.location.file.name == self._file_name
+        except AttributeError:
+            return False
+
+
+    def get_file_location(self, line, column):
+        ""
+
+        :param line: the desired line in the file
+
+        :type line: integer
+
+        :param column: the desired column on the line
+
+        :type column: integer
+
+        Get the location for the given line and column
+
+        ""
+        return cindex.SourceLocation.from_position(self._tu,
+                                                   self._tu.get_file(self._file_name), line,
+                                                   column)
+    def get_next_func_decl(self):
+        ""
+        This will iterate through all function declarations, this includes the declaration
+        body as part of an actual function definition.
+        ""
+        for node in self._cursor.get_children():
+            if self.__node_in_main_src_file(node) and \
+                    node.kind == cindex.CursorKind.FUNCTION_DECL:
+                # We have a function declaration, so we need to find where the compound
+                # statement starts, if it has one, and end the source range there.
+                end = node.extent.end
+                for child in node.get_children():
+                    if child.kind == cindex.CursorKind.COMPOUND_STMT:
+                        end = child.extent.start
+                        break
+
+                yield FileChunk(self, node, cindex.SourceRange.from_locations(node.extent.start,
+                                                                              end))
+
+    def get_tokens(self, extent=None):
+        ""
+
+        :param extent: extent to get tokens for, if extent is none then it will get tokens for the entire file
+
+        :type extent: cindex.SourceRange
+
+        This will return generator for the tokens in the given extent.
+        ""
+        if not extent:
+            extent = self._cursor.extent
+
+        return self._tu.get_tokens(extent=extent)
+
+    def chunkify_statements(self, src_file):
+        ""
+
+        :param src_file: File input to be chunked
+
+        :type src_file: string
+
+        Parses the source file, finds the root directory for the project,
+        adds in all includes, and divides the file into chunks suitable
+        for easy programmer use. Currently divides into
+        Fors
+        Structs
+        Typedefs
+        Fucntions
+        Preprocessor statements
+        Whiles
+        Variable declarations
+        Returns
+        Cases
+        Switches
+        Enumerations
+        Ifs
+        Macros
+        Parameters
+        Dos
+        ""
+        return_list = []
+        def get_children_recursive_helper(self, over_node):
+            if len(list(over_node.get_children())) > 0:
+                for child in over_node.get_children():
+                    return_list.append(over_node)
+                    get_children_recursive_helper(self, child)
+            else:
+                return_list.append(over_node)
+
+        def get_children_recursive(self):
+            for node in self._cursor.get_children():
+                if self.__node_in_main_src_file(node):
+                    get_children_recursive_helper(self, node)
+
+        for_statements = []
+        struct_statements = []
+        typedef_statements = []
+        function_statements = []
+        preprocessor_statements = []
+        while_statements = []
+        var_statements = []
+        return_statements = []
+        case_statements = []
+        switch_statements = []
+        enum_statements = []
+        if_statements = []
+        macro_statements = []
+        param_statements = []
+        do_statements = []
+        compound_statements = []
+        #A function or method parameter.
+        get_children_recursive(self)
+        #There are more attributes to be pulled from here
+        #http://www.masella.name/~andre/libgit2/libclang/Clang.CursorKind.html
+        #There are many, many more.
+
+        #Yes, this is an ugly way to do this. However, it is the fastest and the use
+        #of this class comprises the largest percentage of time used by this
+        #program.
+        for each in return_list:
+            if each.kind == cindex.CursorKind.FOR_STMT:
+                for_statements.append(each)
+            if each.kind == cindex.CursorKind.STRUCT_DECL:
+                struct_statements.append(each)
+            if each.kind == cindex.CursorKind.TYPEDEF_DECL:
+                typedef_statements.append(each)
+            if ((each.kind == cindex.CursorKind.FUNCTION_DECL) and (each.type.kind == cindex.TypeKind.FUNCTIONPROTO)):
+                function_statements.append(each)
+            if each.kind == cindex.CursorKind.INCLUSION_DIRECTIVE:
+                preprocessor_statements.append(each)
+            if each.kind == cindex.CursorKind.WHILE_STMT:
+                while_statements.append(each)
+            if each.kind == cindex.CursorKind.VAR_DECL:
+                var_statements.append(each)
+            if each.kind == cindex.CursorKind.RETURN_STMT:
+                return_statements.append(each)
+            if each.kind == cindex.CursorKind.CASE_STMT:
+                case_statements.append(each)
+            if each.kind == cindex.CursorKind.SWITCH_STMT:
+                switch_statements.append(each)
+            if each.kind == cindex.CursorKind.ENUM_DECL:
+                enum_statements.append(each)
+            if each.kind == cindex.CursorKind.IF_STMT:
+                if_statements.append(each)
+            if each.kind == cindex.CursorKind.MACRO_DEFINITION:
+                macro_statements.append(each)
+            if each.kind == cindex.CursorKind.PARM_DECL:
+                param_statements.append(each)
+            if each.kind == cindex.CursorKind.DO_STMT:
+                do_statements.append(each)
+            if each.kind == cindex.CursorKind.COMPOUND_STMT:
+                compound_statements.append(each)
+
+        for_statements = delete_duplicates(for_statements)
+        struct_statements = delete_duplicates(struct_statements)
+        typedef_statements = delete_duplicates(typedef_statements)
+        function_statements = delete_duplicates(function_statements)
+        preprocessor_statements = delete_duplicates(preprocessor_statements)
+        while_statements = delete_duplicates(while_statements)
+        var_statements = delete_duplicates(var_statements)
+        return_statements = delete_duplicates(return_statements)
+        case_statements = delete_duplicates(case_statements)
+        switch_statements = delete_duplicates(switch_statements)
+        enum_statements = delete_duplicates(enum_statements)
+        if_statements = delete_duplicates(if_statements)
+        macro_statements = delete_duplicates(macro_statements)
+        param_statements = delete_duplicates(param_statements)
+        do_statements = delete_duplicates(do_statements)
+        compound_statements = delete_duplicates(compound_statements)
+
+        chunk_dict = dict([("for_chunks", for_statements),
+                           ("struct_chunks", struct_statements),
+                           ("typedef_chunks", typedef_statements),
+                           ("function_chunks", function_statements),
+                           ("preprocessor_chunks", preprocessor_statements),
+                           ("while_chunks", while_statements),
+                           ("var_chunks", var_statements),
+                           ("return_chunks", return_statements),
+                           ("case_chunks", case_statements),
+                           ("switch_chunks", switch_statements),
+                           ("enum_chunks", enum_statements),
+                           ("if_chunks", if_statements),
+                           ("macro_chunks", macro_statements),
+                           ("param_chunks", param_statements),
+                           ("compound_statement_chunks", compound_statements),
+                           ("do_chunks", do_statements)])
+        return chunk_dict
+
+def order_issues(issue_objs):
+    ""
+    :param issue_objs: The list of issue objects.
+    :return: A reordered list of issue objects
+    ""
+    order = [
+        # Whitespace handling
+        105,
+        120,
+
+        # Outright deletion
+        108,
+        123,
+        104,
+
+        # Fix header comments before running tests that rely on them.
+        103,
+        117,
+        118,
+        119,
+
+        # In-function changes
+        112,
+        116,
+
+        # Whole-file changes
+        113,
+        115,
+        122,
+
+        # Upgrade comments before performing any other comment processing.
+        121,
+
+        # Comments
+        101,
+        102,
+        109,
+        110,
+        111,
+        124,
+
+        # Header fixers
+        125,
+
+        # Just Checkers
+        126
+
+        # Unused numbers:
+        # 106
+        # 107
+    ]
+
+    # We create a dictionary of issue_num to issue obejcts, then iterate
+    # through the order list, looking for issues with the numbers in the order
+    # list, putting them into a list of final, ordered issues. If no object is
+    # found with a given issue (ie it's not been ordered to run), instead put
+    # None in the ordered list. Finally, filter out the Nones and return the
+    # final list.
+    ret = []
+    for each in [{int(o.issue_num): o for o in issue_objs}.setdefault(each, None) for each in order]:
+        if each:
+            ret.append(each)
+
+    return ret
+
+
+def main(args):
+    ""
+    :param args: The argparse arguments that can be passed to this, call this with the '-h' options for full information on the options.
+
+    :type args: list
+
+    Main function calling the command line, checking the validity and candidacy of the
+    source file, and tying its fixes to the appropriate functions.
+    ""
+    issues_present = []
+    final_issues = []
+    #List of issues that need argparsing set up for them - we want to skip issues that don't exist
+    top_num = 0
+    all = string.maketrans("", "")
+    nodigs = all.translate(all, string.digits)
+    #Dumping digits so that int comparison can be used to find the top number
+    checker_dir = os.path.dirname(os.path.abspath(__file__))
+    checker_dir += r"/issue_checkers"
+    checker_dir = os.path.normpath(checker_dir)
+    #os.path.normpath(path) normalizes a pathname by collapsing redundant separators and up-level
+    # references. On Windows, it converts forward slashes to backward slashes.
+    for root, dirs, files in os.walk(checker_dir):
+        for file in files:
+            temp_file_str = file.translate(all, nodigs)
+            issues_present.append(temp_file_str)
+            #Find the issues that actually exist and append them to the list
+            if (temp_file_str != "") and (int(temp_file_str) > top_num):
+                top_num = int(temp_file_str)
+                #Find how far up the for loop needs to iterate
+    for each_issue in delete_duplicates(issues_present):
+        if each_issue != "":
+            final_issues.append(int(each_issue))
+            #Find issues that exist - want to skip those that don't exist to avoid exceptions
+    num_checks = int(top_num)
+
+    usage = ('\ncfixer.py REPORTER SOURCE_FILE @CONFIG_FILE fix arg arg fix fix arg etc\ne.g. '
+             'cfixer.py stdout testfile.c @config.cfg +c101 25 50 +c105 25 -f104\n')
+
+    parser = CommentArgParser(usage=usage, prefix_chars="+-%", fromfile_prefix_chars="@")
+    parser.add_argument('reporter', help="Please input your reporter that you wish to plug into.")
+
+    parser.add_argument('source_file', help='Please input your source file to be '
+                        'corrected.')
+
+    for i in range(101, num_checks + 1):
+        if i not in final_issues:
+            continue
+        option = "-c" + str(i)
+        parser.add_argument(option, action=IssueAction, nargs="*", default=[],
+                            dest="issues")
+
+    for i in range(101, num_checks + 1):
+        if i not in final_issues:
+            continue
+        option = "-f" + str(i)
+        parser.add_argument(option, action=IssueAction, nargs="*", default=[],
+                            dest="issues")
+
+    for i in range(101, num_checks + 1):
+        if i not in final_issues:
+            continue
+        option = "+c" + str(i)
+        parser.add_argument(option, action=IssueAction, nargs="*", default=[],
+                            dest="issues")
+
+    for i in range(101, num_checks + 1):
+        if i not in final_issues:
+            continue
+        option = "+f" + str(i)
+        parser.add_argument(option, action=IssueAction, nargs="*", default=[],
+                            dest="issues")
+
+    args = parser.parse_args(args=args)
+
+    chunker = ChunkMaster(args.source_file, get_file_root_dir(args.source_file))
+    chunk_dict = chunker.chunkify_statements(args.source_file)
+
+    if not os.path.exists(args.source_file):
+        parser.error("Source file or config file not specified or not found")
+        logging.critical(usage)
+    else:
+        extension = args.source_file.split(".")[-1]
+        if extension == "c" or extension == "cpp" or extension == "h":
+            issue_objects = order_issues(args.issues)
+            blanket_class = IssueAggregator(issue_objects)
+            blanket_class.pass_in_chunks(chunk_dict)
+            blanket_class.run_fixes(issue_objects)
+        else:
+            logging.error(".%s file parser has not been implemented yet" % extension)
+
+if __name__ == "__main__":
+    main(sys.argv[1:])in(sys.argv[1:])
+
+\end{lstlisting}
+
+\subsection{cfixer\_base.py}
+\begin{lstlisting}[frame=single,basicstyle=\small]
+import sys
+import os
+import copy
+import ConfigParser
+import string
+import textwrap
+import abc
+import logging
+import argparse
+from tempfile import mkstemp
+from shutil import move
+
+class BaseIssue(object):
+    __metaclass__ = abc.ABCMeta
+    ""
+    This is the class in which all issues will inherit from. This should contain all the
+    variables necessary to implement any of the fixes desired. Object must remain in the
+    inheritance list so that ABC functionality remains intact. This class is abstract.
+
+    :param fix: All are necessary to work. On/off for checking the error or fixing it
+    :type fix: boolean
+
+    :param issue_num: Number for which error this object will correspond to
+    :type issue_num: int
+
+    :param file_name: File specified from command line to check/fix
+    :type file_name: string
+
+    :param func_args: All the arguments of the specific issue to be fixed/checked
+    :type func_args: List
+    
+    :param reporter_instance: The selected reporter class should have been instantiated and passed in
+    :type reporter_instance: BaseReporter
+    ""
+    def __init__(self, fix, issue_num, file_name, func_args, reporter_instance):
+        self.fix = fix
+        self.issue_num = issue_num
+        self.file_name = file_name
+        self.func_args = func_args
+        self.chunk_dict = None
+        self.usage = ""
+        self.description = ""
+        self.reporter = reporter_instance
+        self.reporter.set_issue_class(self)
+
+    @abc.abstractmethod
+    def check_args(self):
+        return True
+
+    @abc.abstractmethod
+    def get_description(self):
+        return self.description
+
+    @abc.abstractmethod
+    def process(self):
+        return
+
+class IssueAggregator(object):
+    def __init__(self, fix_objs):
+        self.fix_objs = fix_objs
+
+    def pass_in_chunks(self, chunk_dict):
+        ""
+        :param chunk_dict: Dictionary of chunks parsed from the source file
+        
+        :type chunk_dict: dictionary
+        
+        Sets each classes class variable chunk
+        dictionary to be equal to the one defined
+        within cfixer.
+        ""
+#        Due to quirks in the way super() works, 
+#        this is much simpler than wasting time
+#        trying to make a method in BaseClass to
+#        do the same thing or copying the method 
+#        over to each individual and new Issue.
+        for each in self.fix_objs:
+            each.chunk_dict = chunk_dict
+
+
+    def run_fixes(self, fix_objs_list):
+        from cfixer import ChunkMaster
+        ""
+        
+        :param fix_objs_list: Instances of fixes specified
+        
+        :type fix_objs_list: list
+        
+        Takes each of the objects corresponding to a fix each and
+        processes the source file based on their fixes.
+        ""
+        for check_each in fix_objs_list:
+            if check_each.check_args() is False:
+                logging.info(check_each.usage)
+                return
+#----------------------------------------------------
+        #The following will rearrange the object fixing list
+        #in order from fixes to checks to ensure that checks
+        #are done first and do not report on an outdated version
+        #of their input file when they finally get a chance to 
+        #process.
+        check_list = []
+        for each_issue in fix_objs_list:
+            if not each_issue.fix:
+                check_list.append(each_issue)
+                fix_objs_list.pop(fix_objs_list.index(each_issue))
+        for each_check in check_list:
+            fix_objs_list.append(each_check)
+#------------------------------------------------------
+        for each_fix in fix_objs_list:
+            each_fix.process()
+            each_fix.reporter.print_out_results()
+
+            # If we made changes to the source file in this fix, we need to
+            # update the following fixes' chunk dictionaries.
+            if each_fix.reporter.issue_count > 0:
+                updated_chunk_dict = ChunkMaster(each_fix.file_name, "this string isn't even used").chunkify_statements(each_fix.file_name)
+                for each in fix_objs_list[fix_objs_list.index(each_fix) + 1:]:
+                    each.chunk_dict = updated_chunk_dict
+
+\end{lstlisting}
+
+\subsection{cfixer\_base\_reporter.py}
+\begin{lstlisting}[frame=single,basicstyle=\small]
+import sys
+import os
+import copy
+import ConfigParser
+import string
+import textwrap
+import abc
+import logging
+import argparse
+from tempfile import mkstemp
+from shutil import move
+
+class BaseReporter(object):
+    __metaclass__ = abc.ABCMeta
+    ""
+    This class aggregates several variables for some diagnostics on each fix. The return
+    out function in particular can log into any of several outputs.
+    ""
+    def __init__(self):
+        self.issue_count = 0
+        self.reported_lines = []
+        self.issue_class = None
+        self.title = ""
+        self.usage = ""
+
+    @abc.abstractmethod
+    def report_issue(self, line_number):#used to be increment_fix_counter
+        ""
+        Counts how many fixes were performed within the fixing class and 
+        stores their line numbers in a list.
+        ""
+        self.issue_count += 1
+        self.reported_lines.append(line_number)
+
+    def print_out_results(self):
+        ""
+        Return out the key diagnostics from each fix. 
+        ""
+        fix_str = ""
+        fix_verb_str = ""
+        if self.issue_class.fix:
+            fix_str = "Fix "
+            fix_verb_str = " applied "
+        else:
+            fix_str = "Check "
+            fix_verb_str = " observed "
+        logging.info("<" + self.issue_class.file_name + ">: " + fix_str + \
+            str(self.issue_class.issue_num) + fix_verb_str + str(self.issue_count) + " times")
+
+    def set_issue_class(self, fix_instance):
+        self.issue_class = fix_instance
+
+\end{lstlisting}
+
+\subsection{cfixer\_util.py}
+\begin{lstlisting}[frame=single,basicstyle=\small]
+import sys
+import re
+import os
+import io
+import fileinput
+import clang.cindex
+import ConfigParser
+import string
+import textwrap
+import argparse
+import logging
+from tempfile import mkstemp
+from shutil import move
+from os import remove, close
+
+
+#----------------------------------
+def replace_line(file_name, line_no, start, end, subst):
+    ""
+    Replaces all characters within a designated window of
+    a line with another substring. Supplying text larger
+    than the window will allow an in-place append; less
+    text allows an in-place removal.
+    :param file_name: target file (same value as BaseIssue.file_name)
+    :param line_no: line number
+    :param start: starting column value
+    :param end: ending column value
+    :param subst: substitute string
+    ""
+    col_s = start
+    col_e = end
+    lines = open(file_name, 'r').readlines()
+
+    temp = lines[line_no - 1]
+    temp = temp[:col_s] + subst + temp[col_e:]
+    lines[line_no - 1] = temp
+
+    out = open(file_name, 'w')
+    out.writelines(lines)
+    out.close()
+#----------------------------------
+def replace(source_file, pattern, subst):
+    ""
+    Replaces all instances of a string of text
+    within a file with another substring. Uses line-based
+    parsing, so multi-line patterns will not be
+    located with this function.
+    ""
+    fh, abs_path = mkstemp()
+    new_file = io.open(abs_path, 'wb')
+    old_file = io.open(source_file)
+    for line in old_file:
+        new_file.write(line.replace(pattern, subst))
+    new_file.close()
+    close(fh)
+    old_file.close()
+    remove(source_file)
+    move(abs_path, source_file)
+#----------------------------------
+def post_process_file(in_src):
+    fh, abs_path = mkstemp()
+    new_file = io.open(abs_path, 'wb')
+    old_file = io.open(in_src, 'rb')
+    for each_line in old_file:
+        if sys.platform == "win32" or sys.platform == "cygwin":
+            each_line = each_line.rstrip() + "\r\n"
+        else:
+            each_line = each_line.rstrip() + "\n"
+        new_file.write(each_line)
+    new_file.close()
+    close(fh)
+    old_file.close()
+    remove(in_src)
+    move(abs_path, in_src)
+#----------------------------------
+class Tokend():
+    def __init__(self, tok_type, tok_extent, tok_spelling, tok_startline, tok_endline, tok_startcol, tok_endcol):
+        self.type = tok_type
+        self.extent = tok_extent
+        self.spelling = tok_spelling
+        self.startline = tok_startline
+        self.endline = tok_endline
+        self.startcol = tok_startcol
+        self.endcol = tok_endcol
+
+    def _getType(self):
+        return self.type
+
+    def _getExtent(self):
+        return self.extent
+
+    def _getSpelling(self):
+        return self.spelling
+
+    def _getStartline(self):
+        return self.startline
+
+    def _getEndline(self):
+        return self.endline
+
+    def _getStartcol(self):
+        return self.startcol
+
+    def _getEndcol(self):
+        return self.endcol
+
+    def _setType(self, ty):
+        self.type = ty
+
+    def _setExtent(self, ex):
+        self.extent = ex
+
+    def _setSpelling(self, spell):
+        self.spelling = spell
+
+    def _setStartline(self, x):
+        self.startline = x
+
+    def _setEndline(self, y):
+        self.endline = y
+
+    def _setStartcol(self, z):
+        self.startcol = z
+
+    def _setEndcol(self, w):
+        self.endcol = w
+#----------------------------------
+def delete_duplicates(in_list):
+    temp_list = []
+    for i in in_list:
+        if i not in temp_list:
+            temp_list.append(i)
+    return temp_list
+#----------------------------------
+def long_string_splitter(sentence_str, inline_comment_start, inline_comment_end):
+    ""
+    Breaks up long strings into lines that are acceptably short based
+    on the parent function parameters
+    ""
+    new_body = ""
+    final_string = ""
+    lines = sentence_str.split("\n")
+    for line in lines:
+        if len(line) > 5:
+            w = textwrap.TextWrapper(width=inline_comment_start + (inline_comment_end - inline_comment_start) - 2, break_long_words=True, initial_indent=" " * inline_comment_start, subsequent_indent=((" " * inline_comment_start) + "/*"))
+            line = "\n".join(w.wrap(line))
+        new_body += line + "\n"
+    for each_line in new_body.splitlines():
+        final_string += each_line + " */" + "\n"
+    return final_string.lstrip().rstrip()
+#----------------------------------
+def clean_file(filename):
+    # function to check if the line can be deleted
+    def is_all_whitespace(line):
+        for char in line:
+            if char != ' ' and char != '\n':
+                return False
+        return True
+
+    # generates the new lines
+    with open(filename, 'r') as file:
+        file_out = []
+        for line in file:
+            if is_all_whitespace(line):
+                line = '\n'
+            file_out.append(line)
+
+    # removes whitespaces at the end of file
+    while file_out[-1] == '\n':  # while the last item in lst is blank
+        file_out.pop(-1)  # removes last element
+
+    with open(filename, 'w') as file:
+        file.write(''.join(file_out))
+#----------------------------------
+def break_string_up(str, inline_comment_start, inline_comment_end):
+    ""
+    Container function for formatting the string according to the passed
+    in length and the above column beginning.
+    ""
+    str = str.replace("/*", "")
+    str = str.replace("*/", "")
+    str = long_string_splitter(str, inline_comment_start, inline_comment_end)
+    str = "/*" + str
+    str = str.replace("/*", "/* ")
+    return str
+#Temp dev stuff---------------------------------------------------
+ROOT_PATHS = ('dev', 'src', 'code-check', 'unit')
+# These are the blacklisted directories, things you don't want to walk into
+DIRECTORY_BLACKLIST = ('.git', '.sbas', 'bin')
+#Temp Dev stuff---------------------------------------------------
+#C:\git\gdl88\gdl88\src\cmpnnt\io\cxp
+def get_sub_directories(root_dir):
+    ""
+    This will bring back a list of subdirectories for the passed in root
+    directory.  The list will also have the '-I' in between each directory
+    so that it can be passed directly to ycm and clang.
+    Any directories in the DIRECTORY_BLACKLIST will be skipped as well as
+    any subdirectories in the blacklist.  If you want to add an explicit
+    subdirectory of a blacklisted directory you'll need to add it to
+    the FLAGS list.
+    ""
+    sub_dir_flags = []
+    if root_dir:
+        for root, dirs, files in os.walk(root_dir):
+            #Skip the blacklisted directories.
+            for blacklisted in DIRECTORY_BLACKLIST:
+                if blacklisted in dirs:
+                    dirs.remove(blacklisted)
+            sub_dir_flags.append("-I" + str(root))
+    return sub_dir_flags
+
+def get_file_root_dir(filename):
+    ""
+    The idea is walk up the file path until we find the root directory we
+    care about.  To make this the most portable we are going to look for the
+    "src" directory as long as the parent of the "src" directory isn't the
+    "dev" directory.  This should work for projects like the G2xxx where
+    everything is in the "src" directory.  It should also work for ACL
+    development environments where things are in the "dev" directory.
+    If neither directory is found this just returns None
+    ""
+    head, tail = os.path.split(filename)
+    while tail and tail not in ROOT_PATHS:
+        head, tail = os.path.split(head)
+    #if the tail wasn't the main root, ie. "dev" then try splitting one more
+    #time
+    if tail and tail != ROOT_PATHS[0]:
+        temp_head, temp_tail = os.path.split(head)
+        #if the split shows the main root then save that off.
+        if temp_tail and temp_tail == ROOT_PATHS[0]:
+            tail = temp_tail
+            head = temp_head
+    # If we had a tail and a head then make the file root
+    # Otherwise just empty it.
+    if tail and head:
+        head = os.path.join(head, tail)
+    else:
+        head = None
+    return head
+
+\end{lstlisting}
 
 \end{document}
