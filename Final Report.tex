@@ -1,6 +1,7 @@
 \documentclass[11pt]{scrreprt}
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
+\usepackage{listings}
 \usepackage{longtable}
 \usepackage{multicol}
 \usepackage{booktabs} % http://ctan.org/pkg/booktabs
@@ -51,7 +52,8 @@
 This project was requested by Garmin AT Inc., a subsidiary of Garmin Corporation, as part of their ongoing commitment to engineering education at Oregon State University and the continued growth of software engineering requirements within their internal software development teams.
 
 Garmin AT focuses on avionics and navigational electronics for use within private and commercial aircraft.
-This equipment contains embedded firmware and software written in C and requiring exacting standards and precision under Federal Aviation Administration (FAA) guidelines prior to use in production products.
+This equipment contains embedded firmware and software written in C and requiring exacting standards and precision under Federal Aviation Administration (FAA) guidelines prior 
+to use in production products.
 Combining these FFA standards with Garmin AT's internal style and formatting guidelines has meant that evaluating and fixing compliance issues has been a time consuming process.
 
 The purpose of this project was to use an internally developed code review tool as a baseline to develop a modular application that leverages the LLVM project's Clang AST interpreter libraries\footnote{http://clang.llvm.org/} and the Python regular expression libraries to process rulesets for each style and formatting requirement.
@@ -601,5 +603,102 @@ Our poster is printed and ready, all issues for version 3.0 have been pulled int
 We had a successful presentation at EXPO, but did not receive much traffic due to our location. We met with Nels Oscar for the last time a few weeks ago and according to him we have met all expectations and requirements other than the final report and video presentation. We also had a brief meeting with Andrew Stucky, our mentor/sponsor from Garmin AT, during the EXPO and he expressed that we had done a good job and that the final product was beginning to be adopted by several development teams within Garmin. The response from those teams has been positive.
 
 We would like to thank Andrew for his support and time on this project, Nick Santana for his technical expertise, Nels Oscar for his assistance and timely input, and Kevin McGrath for leading a productive and encouraging senior software engineering course.
+
+\chapter{EXPO Poster}
+
+\chapter{Project Documentation}
+
+Since our project involves modifying source code files for developers, the cfixer application provides a command-line interface (CLI) for ease-of-use, portability, maintenance, and scripting extensibility.
+The technical skillset of intended userbase allowed us to forgo development of a graphical user interface (GUI) and focus primarily on providing bullet-proof executions that can be scripted using user-defined config files.
+
+The \texttt{cfixer} application is composed entirely in Python, specifically compatible with Python 2.7.10 (but capable of running with Python 2.7.x or 3.4.x versions), and encapsulating the LLVM project's Clang AST libraries\footnote{http://clang.llvm.org/}, specifically Clang 3.7 (written in C++ and compatible with C, C++, Objective-C and Objective-C++ programming languages).
+Because it utilize lambda functions, anonymous functions, and newer regular expression libraries (\texttt{regex}) in Python, \texttt{cfixer} is not compatible with Python 2.2 or older version\footnote{https://docs.python.org/2/whatsnew/2.2.html}.
+
+The \texttt{cfixer} 1.0 application introduced cross-compatible infrastructure, which was further updated in version 2.0, so that it can be run on Microsoft Windows, Apple OSX, Cygwin, and Linux/Unix-like systems (Ubuntu, Debian, GNU, BSD, etc.).
+Additional systems that support and are capable of running Python 2.7+ code could be compatible with \texttt{cfixer}, but they have not been tested at this time.
+
+\section{Installation}
+
+\textbf{Prerequisites}
+\begin{itemize}
+	\item Python 2.7.x or 3.4.x
+	\item Terminal access (\texttt{Cygwin} for Windows is recommended)
+	\item Local clone of \texttt{GarminAT/osu-code-check-2014} repository
+\end{itemize}
+
+As a proprietary product of Garmin AT Inc., the \texttt{cfixer} application is not publicly available.
+The source code is maintained in a private \texttt{git} repository that must be cloned and run locally.
+For development purposes during this project, code has also been maintained on GitHub\footnote{https://github.com/} in a private repository accessible to the project team.
+
+Python 2.7+ must be installed prior to running the \texttt{cfixer} application, and the installation process for that environment is highly-specific to the operating system. Consulting the Python download pages\footnote{https://www.python.org/downloads/}, including installation instructions, for your specific system is the preferred method.
+
+Since all interaction with the \texttt{cfixer} application occurs in the terminal, no installation process is required directly for \texttt{cfixer}.
+
+\section{Usage}
+
+\texttt{cfixer} can be executed in two ways; through direct command-line execution, or scripted in config files that contain the same CLI commands.
+Since both methods invoke the \texttt{cfixer} application through command-line execution, this guide will focus on individual commands.
+Any commands highlighted can also be included in a config script for chaining commands.
+
+The first thing to consider when running \texttt{cfixer} is “Which issues do I want to run?”.
+Issues are the modular scripts which encapsulate the checking and fixing functionality related to a single rule.
+A simple example of an issue is the one which converts tabs to four spaces.
+This issue can accept an argument for the number of spaces used in the conversion, but this defaults to four.
+A more complex issue is one which aligns and organizes the contents of the parameter list in a function signature.
+This list can include the parameter names, their types, qualifiers and comments in a number of places.
+Each issue is referred to by its number, so for example, the tab conversion issue is 105 and the parameter alignment one is 112.
+
+After deciding which issues to run, it is really quite easy to run \texttt{cfixer}. With the source installed correctly, it is just a matter of invoking Python with \texttt{cfixer} as the first argument, followed by any number of issue commands and their appropriate number of arguments. 
+A typical invocation of \texttt{cfixer} will appear similar to the following:\\
+\lstset{language=Python}
+\begin{minipage}{\linewidth}
+\begin{lstlisting}[frame=single,basicstyle=\small]
+python cfixer.py stdout \path\file.c +c112 +f105 5	(Windows)
+or
+./cfixer.py stdout /path/file.c +c112 +f105 5		(Linux)
+\end{lstlisting}
+\end{minipage}
+
+The \texttt{stdout} parameter tells \texttt{cfixer} to use the standard output (output to the screen).
+This is another modular aspect of the product which allows \texttt{cfixer} to be integrated into the build pipeline of IDEs.
+Other output modules exist that interact with Eclipse and Visual Studio’s outputs, though we did not work on this aspect of the product.
+\texttt{file.c} is simply the input file which we will be checking against and fixing (only where the \texttt{+<issue>} option is used). 
+Finally, the rest of the command is the arguments to \texttt{cfixer}.
+\texttt{+c112} indicates that we want to run issue 112 in check mode, meaning it will look for errors but not correct them.
+\texttt{+f105 5} indicates that we want to run issue 105 in fix mode, meaning errors will be found and fixed in the file, and the 5 is an argument to the issue coming before it, in this case specifying that we want to replace any tabs with 5 spaces.
+In addition to the above usage, one can invoke \texttt{cfixer} using a config file similar to the following:\\
+\lstset{language=Python}
+\begin{minipage}{\linewidth}
+\begin{lstlisting}[frame=single,basicstyle=\small]
+python cfixer.py \path\file.c @config.cfg		(Windows)
+or
+./cfixer.py stdout /path/file.c @config.cfg		(Linux)
+\end{lstlisting}
+\end{minipage}
+
+This invocation is nearly exactly the same as above, except the issue list and arguments are in a config file, \texttt{config.cfg}, allowing for projects to save and commit their test configurations.
+
+\section{Structure \& Design}
+
+Under the surface, the operation of \texttt{cfixer} is also quite straightforward.
+
+Upon invoking \texttt{cfixer}, the first thing that happens is the list of issues are compiled together, reordered such that they will not interfere with each other, and the issue objects are instantiated with their specific parameters.
+At this point, the issue objects accept the target file(s), one at a time, in the order specified above.
+Before the issue examines the target file, the Clang interpreter is invoked to build the abstract syntax tree (AST) representation of the file.
+Depending on the specific issue invoked, the Clang interpreter might also be tasked with tokenizing and serializing the file for more detailed evaluations.
+At this point, the issue is handed the execution thread and can begin examining the file for specific violations that should be flagged or fixed (as indicated).
+
+The implementation of each issue is unique, but at a high level, the issue first identifies problematic tokens and/or blocks of code that do not meet the specific requirements for that issue and are then reported to standard output (\texttt{stdout}) or any other \textit{Reporter} indicated, and/or fixed through specific resolution steps indicated in the issue code.
+Upon sucessful completion of an issue, it hands execution thread control back to the \texttt{cfixer} application and the next issue (if any) is executed.
+Because the state of the target file is not fixed, and highly volatile when fixes are applied, each issue that executes must regenerate the AST representations prior to executing it's own check and/or fix code.
+
+\section{Theory of Operation}
+
+The \texttt{cfixer} application utilizes a modular infrastructure of isolated solutions that accept AST representations (typically in the form of serialized token mappings) and string representations (through reader/writer APIs) of the target file.
+
+This design allows for a plug-and-play system that can easily be maintained by removing unnecessary, redundant, or depreciated issues and adding new issues as needed.
+To further the portability of \texttt{cfixer}, the reporting processes of the system are encapsulated in \texttt{Reporter} class files that can also be added to and removed as needed.
+Although not highlighted in this project, the intent of this project is to eventually pipeline the process of reviewing and fixing code formatting issues as part of the typical product build process.
+Capturing error messages and status outputs are thus highly desirable, and future work will focus on developing the necessary \texttt{Reporter} classes to enable this type of execution.
 
 \end{document}
