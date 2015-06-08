@@ -36,15 +36,51 @@
     \par\noindent\makebox[2.5in]{\hrulefill} \hfill\makebox[2.0in]{\hrulefill}%
     \par\noindent\makebox[2.5in][l]{#1}      \hfill\makebox[2.0in][l]{Date}%
 }%
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
 
-\title{\textbf{Clang AST Analysis and Repair}}
-\subtitle{2014-2015 Computer Science Capstone Project}
-\author{Nicholas Nelson\\
-		Charles Santos}
-\date{}
 \begin{document}
 
-\maketitle
+\begin{titlepage}
+\begin{center}
+
+% Upper part of the page. The '~' is needed because \\
+% only works if a paragraph has started.
+\includegraphics[width=0.25\textwidth]{clang_logo}~\\[1cm]
+
+\textsc{\LARGE Clang AST Analysis and Repair}\\[1.5cm]
+
+\textsc{\Large CS Senior Project}\\[0.5cm]
+
+% Title
+\HRule \\[0.4cm]
+{ \huge \bfseries A Code Quality and Compliance Development Tool \\[0.4cm] }
+
+\HRule \\[1.5cm]
+
+% Author and supervisor
+\noindent
+\begin{minipage}[t]{0.4\textwidth}
+\begin{flushleft} \large
+\emph{Authors:}\\
+Nicholas \textsc{Nelson}\\
+Charles \textsc{Santos}
+\end{flushleft}
+\end{minipage}%
+\begin{minipage}[t]{0.4\textwidth}
+\begin{flushright} \large
+\emph{Mentor:} \\
+Andrew \textsc{Stucky},\\
+Garmin AT Inc.
+\end{flushright}
+\end{minipage}
+
+\vfill
+
+% Bottom of the page
+{\large 2014 - 2015}
+
+\end{center}
+\end{titlepage}
 
 \tableofcontents
 
@@ -606,6 +642,12 @@ We had a successful presentation at EXPO, but did not receive much traffic due t
 We would like to thank Andrew for his support and time on this project, Nick Santana for his technical expertise, Nels Oscar for his assistance and timely input, and Kevin McGrath for leading a productive and encouraging senior software engineering course.
 
 \chapter{EXPO Poster}
+
+The poster conforms to the format assigned to the School of Electrical Engineering and Computer Science within the College of Engineering at Oregon State University, and is included below:
+\begin{figure}[ht]
+  \makebox[\textwidth][c]{\includegraphics[width=1.7\textwidth,angle=90]{poster}}%
+  \label{fig:poster}
+\end{figure}
 
 \chapter{Project Documentation}
 
