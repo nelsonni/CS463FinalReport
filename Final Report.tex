@@ -1,6 +1,7 @@
 \documentclass[11pt]{scrreprt}
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
+\usepackage[hidelinks]{hyperref}
 \usepackage{listings}
 \usepackage{longtable}
 \usepackage{multicol}
@@ -700,5 +701,13 @@ This design allows for a plug-and-play system that can easily be maintained by r
 To further the portability of \texttt{cfixer}, the reporting processes of the system are encapsulated in \texttt{Reporter} class files that can also be added to and removed as needed.
 Although not highlighted in this project, the intent of this project is to eventually pipeline the process of reviewing and fixing code formatting issues as part of the typical product build process.
 Capturing error messages and status outputs are thus highly desirable, and future work will focus on developing the necessary \texttt{Reporter} classes to enable this type of execution.
+
+\section{API Documentation}
+Since \texttt{cfixer} will continued to be developed by Andrew Stucky and his team, the current state of the \texttt{cfixer} API is not permanent and most likely guaranteed to change as furthe development code is added to the project.
+Although some functions and classes have been properly documented through \texttt{pydoc} documentation comments within the Python code, not all issues contain complete and accurate comments, and should thus be read with a grain of salt.
+
+A partial documentation of the \texttt{cfixer\_util} infrastructure file can be found by generating and reviewing the \texttt{pydoc} from the \texttt{doc/source/index.rst} or directly reviewing the code (which includes several in-line comments).
+Also, some of the infrastructure central to the \texttt{cfixer} application is taken from the \textit{Clang AST} libraries and can be consulted by visiting:
+\url{http://clang.llvm.org/doxygen/}.
 
 \end{document}
