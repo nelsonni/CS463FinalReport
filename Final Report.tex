@@ -739,14 +739,40 @@ All of the books, research papers, and references that were used during the desi
 
 For me, the difficulty of this project really came from wrestling with the Clang library and my less-than-perfect knowledge of Python. In a lot of the earlier issues, I would think to myself ``I know what I want it to do, but I don’t know how to make it do that’’. In the end, the Python reference and StackExchange website were about equally helpful in learning the quirks of Python. As for Clang, the library’s documentation was nearly useless because the Python bindings obfuscated all of that or exposed some things but not all things. Working with Clang really came down to a lot of experimentation with parse files, seeing what I could get out of it, and then applying that where it was useful.
 
+Over the course of this project, the things I learned about the most were Python and C grammar. Early on in the project, before we really started working on anything, I was feeling pretty daunted by the idea of using the ASTs to navigate the source, but by the middle of the project, Nick and I were about halfway through CS480 in which we actually were building syntax trees and all that when suddenly everything came together and made sense. Additionally, this project really reminded me of how important communication is when working with other people. This isn’t my first time working in a development team where somebody else is the one who defines the functional requirements where I need to design and implement the technical aspect, but it had been a while since the last time, so getting back into the mindset of “I need to convey my questions about this design really well so that the person answering fully understands and doesn’t think I’m an idiot” took a little while. If I could redo this project, I don’t think I would have changed much of anything. I honestly think we lucked out with a straightforward project where we were not being asked to invent something from absolutely nothing. Additionally, since our client is a software developer for Garmin, we were able to discuss technical issues that were having directly with the client and never had the issue of “my client is asking for something that is literally physically impossible and I they just can’t understand why I can’t deliver”. The one issue that I had was with the scope of some problems where the client and I were in a disagreement of how the implementations of issues should be organized. In the scope of the whole project, however, that problem was nothing.
+
+
 \section{Outcomes for Nicholas Nelson}
 
 \subsection{What technical information did you learn?}
+
+Having previously developed industrial process automation software during a summer internship at Hewlett-Packard in the summer of my sophomore year, I already had experience in Python development and Python-style scripting. During the summer of my junior year, I also had a undergraduate research assistant position that involved software engineering with abstract syntax tree (AST) libraries in Ruby and Java. But since neither of those technologies were combined, and I didn't have an opportunity to work with the Clang AST libraries until now.
+The biggest new technologies were related to the problems of syntax evaluation and processing using ASTs and regular expressions.
+
+The most difficult technical subject matter that I learned during this project had to do with functional programming elements within Python; namely, lambda expressions, anonymous functions, and recursive iteration functions. Some of the underlying conceptual understanding came from also taking the CS444 Operating Systems II, CS480 Translators, and CS381 Programming Languages courses during this project.
+
 \subsection{What non-technical information did you learn?}
+
+Having been in many projects within the Information Technology (IT) sphere during the 5 years that I worked at Samaritan Health Services within their IT department, my understanding of technical projects was already present. But having the opportunity to work on a complete end-to-end software engineering and development project was a new experience for me. Managing coding deadlines that were not directly tied to course assignments was enlightening and single biggest lesson that I learned was that it is best to "under promise, over deliver" within the software development world. Managing time constraints becomes critical when the mysteries of software solutions are not self-evident when planning.
+
 \subsection{What have you learned about project work?}
+
+Project work is always a mystery when going into it, typically becoming even murkier once you're embroiled in it, but once the end is near and there is time to reflect I see that learning to over-design at the onset and keep your head down and working once it's time to put that plan into action is essential to keeping the momentum of a project moving forward.
+The only caveat that I have to that rule though, is that at regular intervals during the timeline of a project, the overall health and direction of the project should be assessed with all stakeholders involved. Nothing is more troubling than finding out that the clients have switched gears and would like to pivot the potential uses for a project into something bigger and more complex.
+
 \subsection{What have you learned about project management?}
+
+Although I have a lot of experience both in corporate projects, IT projects, and school projects, I continue to receive reinforcement that I would rather not become a project manager. I enjoy organizing people and projects at the team level, but multi-departmental multiple stakeholder projects seem to become myried in the differences between technically adept and non-technically aware members of these types of teams.
+
 \subsection{What have you learned about working in teams?}
+
+The loss of one of our teammates at the midpoint of the project actually enabled us to more swiftly complete the tasks that needed to be completed.
+But reflecting on this change, I am reminded that every member of a team has their own motivations and goals for participating in the team.
+They may appear to be focused on the project, but other forces outside of my control can also be at play, and understanding these elements (or at least being prepared for them) is the best way to maintain an even keel within a team.
+
 \subsection{If you could do it all over, what would you do differently?}
+
+I would insist to the client that building a shared infrastructure of functions and code that can be reused by every member of the team is a highly desirable trait within a modular project such as this one. Other than that, I would generally stick to the same game plan.
 
 \chapter{Appendixes}
 
