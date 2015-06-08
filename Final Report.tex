@@ -68,7 +68,7 @@ The project was designed in a modular fashion to allow individual formatting rul
 Issues for each rule, submitted by Andrew, were used to document requirements, design decisions, team communications, and status updates.
 Pull requests between development branches and the master branch were used to alert Andrew that a potential solution to a specific rule was ready for final testing and integration into the codebase that would be included in one of three major version releases that occurred during the project.
 
-\chapter{Original Client Requirements Document}
+\chapter{Original Client Requirements Document} \label{orig_req_doc}
 
 \section{Project Demographics}
 
@@ -344,7 +344,7 @@ Other Issues:
 \tabitem Function not associated with a c file & \tabitem Function not actually defined in the specified c file\\
 \end{longtable}
 
-\bibliography{references.bib}{}
+\bibliography{references.bib}{} \label{bib}
 \bibliographystyle{plain}
 
 \section{Glossary}
@@ -709,5 +709,47 @@ Although some functions and classes have been properly documented through \textt
 A partial documentation of the \texttt{cfixer\_util} infrastructure file can be found by generating and reviewing the \texttt{pydoc} from the \texttt{doc/source/index.rst} or directly reviewing the code (which includes several in-line comments).
 Also, some of the infrastructure central to the \texttt{cfixer} application is taken from the \textit{Clang AST} libraries and can be consulted by visiting:
 \url{http://clang.llvm.org/doxygen/}.
+
+\chapter{New Technologies \& Reference Materials}
+
+\section{Web Resources}
+The majority of our design work occurred during the Fall 2014 term and was documented in the Original Client Requirements Document that is outlined in Chapter~\ref{orig_req_doc}.
+
+Since our project was developed in Python, and highly dependent on the structure and standards of C, we obviously spent a significant amount of time referencing the Python and C language documentation available online.
+
+\begin{itemize}
+	\item Python 2.x documentation: \url{https://docs.python.org/2/}
+	\item C documentation: \url{http://en.cppreference.com/w/}
+\end{itemize}
+
+\section{Reference Books}
+
+All of the books, research papers, and references that were used during the design and development of this project can be found in the bibliography contained in Section~\ref{bib}.
+
+\chapter{Learning Outcomes}
+
+\section{Outcomes for Charles Santos}
+
+\subsection{What technical information did you learn?}
+\subsection{What non-technical information did you learn?}
+\subsection{What have you learned about project work?}
+\subsection{What have you learned about project management?}
+\subsection{What have you learned about working in teams?}
+\subsection{If you could do it all over, what would you do differently?}
+
+For me, the difficulty of this project really came from wrestling with the Clang library and my less-than-perfect knowledge of Python. In a lot of the earlier issues, I would think to myself ``I know what I want it to do, but I don’t know how to make it do that’’. In the end, the Python reference and StackExchange website were about equally helpful in learning the quirks of Python. As for Clang, the library’s documentation was nearly useless because the Python bindings obfuscated all of that or exposed some things but not all things. Working with Clang really came down to a lot of experimentation with parse files, seeing what I could get out of it, and then applying that where it was useful.
+
+\section{Outcomes for Nicholas Nelson}
+
+\subsection{What technical information did you learn?}
+\subsection{What non-technical information did you learn?}
+\subsection{What have you learned about project work?}
+\subsection{What have you learned about project management?}
+\subsection{What have you learned about working in teams?}
+\subsection{If you could do it all over, what would you do differently?}
+
+\chapter{Appendixes}
+
+\section{Essential Code}
 
 \end{document}
